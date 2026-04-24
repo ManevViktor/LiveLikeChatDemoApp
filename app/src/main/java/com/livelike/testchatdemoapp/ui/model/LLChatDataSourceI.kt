@@ -2,21 +2,22 @@ package com.livelike.testchatdemoapp.ui.model
 
 import com.livelike.engagementsdk.publicapis.LiveLikeChatMessage
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 
 
-const val clientID : String = "xyz"
-var activeUserToken : String? = null
+
 
 
 typealias LLMessageList = List<LiveLikeChatMessage>
 
 
-class LLChatDataSourceI(val chatDataClient : ILiveLikeDataSource<LLMessageList> = LiveLikeDataClient(clientID, activeUserToken)) :
+class LLChatDataSourceI(val chatDataClient : ILiveLikeDataSource<LLMessageList>) :
 	ILiveLikeDataSource<LLMessageList> {
 	
 	
-	override val chatMessagesFlow : SharedFlow<List<LiveLikeChatMessage>> get() = chatDataClient.chatMessagesFlow
+	override val chatMessagesFlow : StateFlow<List<LiveLikeChatMessage>> get() = chatDataClient.chatMessagesFlow
 	override val backendResponseFlow : SharedFlow<LLChatBackendResponse<String>> get() = chatDataClient.backendResponseFlow
+	override val loadNextMessagesFlow : SharedFlow<LLMessageList> get() = chatDataClient.loadNextMessagesFlow
 	
 	
 	override fun loadMessages() {
@@ -38,6 +39,14 @@ class LLChatDataSourceI(val chatDataClient : ILiveLikeDataSource<LLMessageList> 
 	override fun sendMessage(message : String) {
 		chatDataClient.sendMessage(message)
 	}
+
+	override fun resetChatSession() {
+		chatDataClient.resetChatSession()
+	}
+	
+	override fun close() {
+		chatDataClient.close()
+	}
 	
 	
 	
@@ -56,11 +65,17 @@ interface ILiveLikeDataSource<T> {
 	fun blockProfile(id : String)
 	
 	fun sendMessage(message : String)
+
+	fun resetChatSession()
 	
-	val chatMessagesFlow : SharedFlow<T>
+	fun close()
 	
+	val chatMessagesFlow : StateFlow<T>
+
 	val backendResponseFlow : SharedFlow<LLChatBackendResponse<String>>
-	
+
+	val loadNextMessagesFlow : SharedFlow<LLMessageList>
+
 }
 
 
@@ -69,12 +84,6 @@ data class LiveLikeChatParams(
 	val token : String,
 	val chatRoomID : String
 )
-
-sealed class LLLoadChatMessageEvents {
-
-
-}
-
 
 sealed class LLChatBackendResponse<out T> {
 	data class Success<T>(val data : T) : LLChatBackendResponse<T>()
