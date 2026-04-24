@@ -16,20 +16,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class LiveLikeDataClient(
+class LiveHistoryDataClient(
     private val clientID: String,
     private val tokenStore: AuthTokenStore
 ) : ILiveLikeDataSource<LLMessageList> {
 
     private val sdkClient: LiveLikeKotlin = createLiveLikeKotlinInstance(clientID)
-    private val messageFlow = MutableStateFlow<LLMessageList>(emptyList())
+    private val historyMessagesFlow = MutableStateFlow<LLMessageList>(emptyList())
     private val backendResponse = MutableSharedFlow<LLChatBackendResponse<String>>(extraBufferCapacity = 1)
     private val loadNextMessages = MutableStateFlow<LLMessageList>(emptyList())
 
     private var chatSession: LiveLikeChatSession? = null
 
     override val chatMessagesFlow: StateFlow<LLMessageList>
-        get() = messageFlow
+        get() = historyMessagesFlow
 
     override val backendResponseFlow: SharedFlow<LLChatBackendResponse<String>>
         get() = backendResponse
@@ -37,9 +37,7 @@ class LiveLikeDataClient(
     override val loadNextMessagesFlow: StateFlow<LLMessageList>
         get() = loadNextMessages
 
-    override fun loadMessages() {
-        emitLoadedChatMessages()
-    }
+    override fun loadMessages() = Unit
 
     override fun loadNextMessages() {
         val session = chatSession
@@ -50,9 +48,7 @@ class LiveLikeDataClient(
 
         session.loadNextHistory(callbackWithSeverity = { result, error ->
             if (result != null) {
-                
-                emitLoadedChatMessages()
-                //loadNextMessages.tryEmit(session.getLoadedMessages().toList())
+                loadNextMessages.value = result
                 emitBackendSuccess("load next messages")
             } else {
                 emitBackendError("load next messages", error?.errorMessage)
@@ -64,7 +60,6 @@ class LiveLikeDataClient(
         val session = ensureChatSession()
         session.connectToChatRoom(roomId) { result, error ->
             if (result != null) {
-                emitLoadedChatMessages()
                 emitBackendSuccess("connect to chat room")
             } else {
                 emitBackendError("connect to chat room", error?.errorMessage)
@@ -75,7 +70,6 @@ class LiveLikeDataClient(
     override fun blockProfile(id: String) {
         sdkClient.profile().blockProfile(profileId = id) { result, error ->
             if (result != null) {
-                emitLoadedChatMessages()
                 emitBackendSuccess("block profile")
             } else {
                 emitBackendError("block profile", error)
@@ -84,30 +78,13 @@ class LiveLikeDataClient(
     }
 
     override fun sendMessage(message: String) {
-        val session = chatSession
-        if (session == null) {
-            emitBackendError("send message", "Chat session is not connected")
-            return
-        }
-
-        session.sendMessage(
-            message = message,
-            liveLikePreCallback = { _, _ -> },
-            callback = { result, error ->
-                if (result != null) {
-                    emitLoadedChatMessages()
-                    emitBackendSuccess("send message")
-                } else {
-                    emitBackendError("send message", error)
-                }
-            }
-        )
+        emitBackendError("send message", "History screen is read-only")
     }
 
     override fun resetChatSession() {
         chatSession?.close()
         chatSession = null
-        messageFlow.value = emptyList()
+        historyMessagesFlow.value = emptyList()
         loadNextMessages.value = emptyList()
     }
 
@@ -134,17 +111,13 @@ class LiveLikeDataClient(
 
         val session = sdkClient.createChatSession()
         session.setMessageWithReactionListener(object : MessageWithReactionListener {
-            override fun onNewMessage(message: LiveLikeChatMessage) {
-                emitLoadedChatMessages()
-            }
+            override fun onNewMessage(message: LiveLikeChatMessage) = Unit
 
             override fun onHistoryMessage(messages: List<LiveLikeChatMessage>) {
-                emitLoadedChatMessages()
+                historyMessagesFlow.value = (historyMessagesFlow.value + messages).distinctBy { it.id }
             }
 
-            override fun onDeleteMessage(messageId: String) {
-                emitLoadedChatMessages()
-            }
+            override fun onDeleteMessage(messageId: String) = Unit
 
             override fun onPinMessage(message: PinMessageInfo) = Unit
 
@@ -158,36 +131,28 @@ class LiveLikeDataClient(
                 messagePubnubToken: Long?,
                 messageId: String?,
                 chatMessageReaction: ChatMessageReaction
-            ) {
-                emitLoadedChatMessages()
-            }
+            ) = Unit
 
             override fun removeMessageReaction(
                 messagePubnubToken: Long?,
                 messageId: String?,
                 emojiId: String,
                 userId: String?
-            ) {
-                emitLoadedChatMessages()
-            }
+            ) = Unit
         })
         chatSession = session
         return session
     }
 
-    private fun emitLoadedChatMessages() {
-        messageFlow.value = chatSession?.getLoadedMessages()?.toList().orEmpty()
-    }
-
     private fun emitBackendSuccess(action: String) {
         val message = "LiveLike API call success: $action"
         backendResponse.tryEmit(LLChatBackendResponse.Success(message))
-        Log.d("ll backend action $action", message)
+        Log.d("ll history action $action", message)
     }
 
     private fun emitBackendError(action: String, error: String?) {
         val message = error ?: "error $action"
         backendResponse.tryEmit(LLChatBackendResponse.Error(message))
-        Log.d("ll backend action $action", message)
+        Log.d("ll history action $action", message)
     }
 }

@@ -3,60 +3,37 @@ package com.livelike.testchatdemoapp.ui.model
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import com.livelike.testchatdemoapp.BuildConfig
 import com.livelike.testchatdemoapp.data.AuthTokenStore
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class LLChatViewModel(
-    private val chatDataSource: ILiveLikeDataSource<LLMessageList>,
-    private val tokenStore: AuthTokenStore
+class LLHistoryViewModel(
+    private val historyDataSource: ILiveLikeDataSource<LLMessageList>
 ) : ViewModel() {
 
-    val chatMessagesFlow: StateFlow<LLMessageList> = chatDataSource.chatMessagesFlow
-    val backendResponseFlow: SharedFlow<LLChatBackendResponse<String>> = chatDataSource.backendResponseFlow
-    val loadNextMessagesFlow: StateFlow<LLMessageList> = chatDataSource.loadNextMessagesFlow
+    val chatMessagesFlow: StateFlow<LLMessageList> = historyDataSource.chatMessagesFlow
+    val backendResponseFlow: SharedFlow<LLChatBackendResponse<String>> = historyDataSource.backendResponseFlow
+    val loadNextMessagesFlow: StateFlow<LLMessageList> = historyDataSource.loadNextMessagesFlow
 
     fun connectToChatRoom(roomId: String) {
-        chatDataSource.connectToChatRoom(roomId)
-    }
-
-    fun loadMessages() {
-        chatDataSource.loadMessages()
+        historyDataSource.connectToChatRoom(roomId)
     }
 
     fun loadNextMessages() {
-        chatDataSource.loadNextMessages()
+        historyDataSource.loadNextMessages()
     }
 
     fun blockProfile(profileId: String) {
-        chatDataSource.blockProfile(profileId)
+        historyDataSource.blockProfile(profileId)
     }
 
-    fun sendMessage(message: String) {
-        if (message.isBlank()) return
-        chatDataSource.sendMessage(message)
-    }
-
-    fun saveAccessToken(token: String) {
-        viewModelScope.launch {
-            tokenStore.saveToken(token)
-        }
-    }
-
-    fun clearAccessToken() {
-        tokenStore.clearTokenAsync()
-    }
-    
-    fun closeChatSession()
-    {
-        chatDataSource.resetChatSession()
+    fun closeChatSession() {
+        historyDataSource.resetChatSession()
     }
 
     override fun onCleared() {
-        chatDataSource.close()
+        historyDataSource.close()
     }
 
     companion object {
@@ -64,7 +41,7 @@ class LLChatViewModel(
             val appContext = context.applicationContext
             return object : ViewModelProvider.Factory {
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    if (!modelClass.isAssignableFrom(LLChatViewModel::class.java)) {
+                    if (!modelClass.isAssignableFrom(LLHistoryViewModel::class.java)) {
                         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                     }
 
@@ -73,17 +50,17 @@ class LLChatViewModel(
                     require(liveLikeClientId.isNotBlank()) {
                         "Missing LIVELIKE_CLIENT_ID. Set livelike.clientId in local.properties or LIVELIKE_CLIENT_ID as a Gradle property."
                     }
+
                     val dataSource = LLChatDataSourceI(
-                        LiveLikeDataClient(
+                        LiveHistoryDataClient(
                             clientID = liveLikeClientId,
                             tokenStore = tokenStore
                         )
                     )
 
                     @Suppress("UNCHECKED_CAST")
-                    return LLChatViewModel(
-                        chatDataSource = dataSource,
-                        tokenStore = tokenStore
+                    return LLHistoryViewModel(
+                        historyDataSource = dataSource
                     ) as T
                 }
             }

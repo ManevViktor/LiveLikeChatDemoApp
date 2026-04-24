@@ -25,6 +25,7 @@ import com.livelike.testchatdemoapp.ui.theme.TestChatDemoAppTheme
 @Composable
 fun MainMenuScreen(
 	onChatLoadedMessagesClick : () -> Unit,
+	onChatHistoryOnlyClick : () -> Unit,
 	modifier : Modifier = Modifier
 ) {
 	Box(
@@ -51,12 +52,11 @@ fun MainMenuScreen(
 			) {
 				Text("Chat Loaded Messages")
 			}
-			OutlinedButton(
-				onClick = {},
-				enabled = false,
+			Button(
+				onClick = onChatHistoryOnlyClick,
 				modifier = Modifier.fillMaxWidth()
 			) {
-				Text("Option 2")
+				Text("Chat History Only")
 			}
 			OutlinedButton(
 				onClick = {},
@@ -82,6 +82,7 @@ private fun MainMenuScreenPreview() {
 	TestChatDemoAppTheme {
 		MainMenuScreen(
 			onChatLoadedMessagesClick = {},
+			onChatHistoryOnlyClick = {},
 			modifier = Modifier.fillMaxSize()
 		)
 	}

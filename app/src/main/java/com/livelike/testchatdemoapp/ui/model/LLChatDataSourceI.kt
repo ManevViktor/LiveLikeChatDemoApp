@@ -17,7 +17,7 @@ class LLChatDataSourceI(val chatDataClient : ILiveLikeDataSource<LLMessageList>)
 	
 	override val chatMessagesFlow : StateFlow<List<LiveLikeChatMessage>> get() = chatDataClient.chatMessagesFlow
 	override val backendResponseFlow : SharedFlow<LLChatBackendResponse<String>> get() = chatDataClient.backendResponseFlow
-	override val loadNextMessagesFlow : SharedFlow<LLMessageList> get() = chatDataClient.loadNextMessagesFlow
+	override val loadNextMessagesFlow : StateFlow<LLMessageList> get() = chatDataClient.loadNextMessagesFlow
 	
 	
 	override fun loadMessages() {
@@ -74,7 +74,7 @@ interface ILiveLikeDataSource<T> {
 
 	val backendResponseFlow : SharedFlow<LLChatBackendResponse<String>>
 
-	val loadNextMessagesFlow : SharedFlow<LLMessageList>
+	val loadNextMessagesFlow : StateFlow<LLMessageList>
 
 }
 
