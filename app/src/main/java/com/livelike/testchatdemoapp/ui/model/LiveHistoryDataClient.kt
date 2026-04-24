@@ -29,7 +29,7 @@ class LiveHistoryDataClient(
     private var chatSession: LiveLikeChatSession? = null
 
     override val chatMessagesFlow: StateFlow<LLMessageList>
-        get() = historyMessagesFlow
+        get() = loadNextMessages
 
     override val backendResponseFlow: SharedFlow<LLChatBackendResponse<String>>
         get() = backendResponse
@@ -48,7 +48,7 @@ class LiveHistoryDataClient(
 
         session.loadNextHistory(callbackWithSeverity = { result, error ->
             if (result != null) {
-                loadNextMessages.value = result
+                loadNextMessages.value += result
                 emitBackendSuccess("load next messages")
             } else {
                 emitBackendError("load next messages", error?.errorMessage)

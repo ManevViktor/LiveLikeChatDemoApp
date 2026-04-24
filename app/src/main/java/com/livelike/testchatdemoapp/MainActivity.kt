@@ -19,7 +19,7 @@ import com.livelike.testchatdemoapp.ui.model.LLHistoryViewModel
 import com.livelike.testchatdemoapp.ui.model.LLChatViewModel
 import com.livelike.testchatdemoapp.ui.theme.TestChatDemoAppTheme
 
-private const val CHAT_ROOM_ID = "d8a6508f-3132-40d8-af08-653f450026b6"
+private const val CHAT_ROOM_ID = "e33e6411-8640-426d-90b6-656b9413c960"
 
 private enum class MainDestination {
 	MainMenu,

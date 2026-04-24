@@ -151,7 +151,7 @@ private fun HistoryMessageList(
     ) {
         itemsIndexed(
             items = messages,
-            key = { _, item -> item.id }
+            key = { index, item -> "${item.id}-${item.timestamp}-${index}" }
         ) { _, item ->
             HistoryMessageCard(
                 item = item,
