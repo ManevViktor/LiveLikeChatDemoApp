@@ -1,8 +1,21 @@
+import java.util.Properties
+
 plugins {
 	alias(libs.plugins.android.application)
 	alias(libs.plugins.kotlin.android)
 	alias(libs.plugins.kotlin.compose)
 }
+
+val localProperties = Properties().apply {
+	val localPropertiesFile = rootProject.file("local.properties")
+	if (localPropertiesFile.exists()) {
+		localPropertiesFile.inputStream().use(::load)
+	}
+}
+
+val liveLikeClientId = providers.gradleProperty("LIVELIKE_CLIENT_ID").orNull
+	?: localProperties.getProperty("livelike.clientId")
+	?: ""
 
 android {
 	namespace = "com.livelike.testchatdemoapp"
@@ -16,6 +29,7 @@ android {
 		versionName = "1.0"
 		
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+		buildConfigField("String", "LIVELIKE_CLIENT_ID", "\"$liveLikeClientId\"")
 	}
 	
 	buildTypes {
@@ -33,6 +47,7 @@ android {
 	}
 	buildFeatures {
 		compose = true
+		buildConfig = true
 	}
 }
 
@@ -40,8 +55,10 @@ dependencies {
 	
 	
 	implementation("com.livelike.android-engagement-sdk:engagementsdk:3.0.11")
+	implementation("androidx.datastore:datastore-preferences:1.2.1")
 	implementation(libs.androidx.core.ktx)
 	implementation(libs.androidx.lifecycle.runtime.ktx)
+	implementation(libs.androidx.lifecycle.viewmodel.ktx)
 	implementation(libs.androidx.activity.compose)
 	implementation(platform(libs.androidx.compose.bom))
 	implementation(libs.androidx.ui)
